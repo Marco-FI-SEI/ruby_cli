@@ -78,4 +78,53 @@ class DeveloperShowcaseScraper
   def add_project_to_showcase
     @developer_showcase.add_project(Project.new_from_showcase(@project_properties))
   end
+
+  # If number of links doesn't match number of projects then the scraper wasn't
+  # able to create all projects most likely due to inconsistent formatting on
+  # project page
+  def get_scrape_success_report
+    # colour code messages
+    pastel = Pastel.new
+
+    # get counts of links and projects
+    project_count = @developer_showcase.projects.count
+    link_count = get_project_links.count
+
+    # prepare error messages
+    link_scraper_error = pastel.red("Links scraper error!\nCheck if HTML formatting has changed!")
+    project_scraper_error = pastel.red("Project scraper error!\nCheck if HTML formatting has changed!")
+    partial_scraper_error = pastel.cyan("Not all projects were scraped!\nEnsure HTML consistency in project pages!")
+    success_message = pastel.green("Success!")
+
+    @report = {}
+
+    if link_count === 0
+      @report[:message] = link_scraper_error
+      @report[:link_count] = 0
+      @report[:project_count] = 0
+    else
+      if project_count === 0
+        @report[:message] = project_scraper_error
+        @report[:link_count] = link_count
+        @report[:project_count] = 0
+      elsif project_count === link_count
+        @report[:message] = success_message
+        @report[:link_count] = link_count
+        @report[:project_count] = project_count
+      else
+        @report[:message] = partial_scraper_error
+        @report[:link_count] = link_count
+        @report[:project_count] = project_count
+      end
+    end
+    render_scrape_report
+  end
+
+  def render_scrape_report
+    header = ["Message", "No.links", "No.projects"]
+    rows = [[@report[:message], @report[:link_count], @report[:project_count]]]
+    table = TTY::Table.new header, rows
+
+    puts table.render(:unicode, multiline: true)
+  end
 end
