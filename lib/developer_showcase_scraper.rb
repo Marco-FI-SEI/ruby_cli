@@ -10,6 +10,7 @@ class DeveloperShowcaseScraper
   def scrape
     get_project_links
     scrape_projects
+
     @developer_showcase
   end
 
@@ -52,8 +53,9 @@ class DeveloperShowcaseScraper
     if @project_page.css(".display-1") &&
        @project_page.css(".showcase-description") &&
        @project_page.at_css('a:contains("Website")') &&
-       @project_page.search("div[class='post-content'] li:first-child")
-      return true
+       @project_page.at_css('li:contains("Submitted by")')
+
+       return true
     end
 
     false
@@ -61,8 +63,7 @@ class DeveloperShowcaseScraper
 
   def get_project_authors
     # two authors usually represented as: "Submitted by: Aliza Aufrichtig & Edward Lee"
-    authors_list_item_text = @project_page.search("div[class='post-content'] li:first-child").text.strip
-
+    authors_list_item_text = @project_page.at_css('li:contains("Submitted by")').text.strip
     # remove "Submitted by: "
     authors_names = authors_list_item_text.gsub("Submitted by: ", "")
     # get authors into array without whitespace
@@ -117,6 +118,7 @@ class DeveloperShowcaseScraper
         @report[:project_count] = project_count
       end
     end
+
     render_scrape_report
   end
 
