@@ -3,8 +3,9 @@ class DeveloperShowcaseScraper
 
   def initialize(base_url)
     @base_url = base_url
-    @developer_showcase = DeveloperShowcase.new
     @doc = Nokogiri::HTML(open("#{base_url}/community/showcase/"))
+    @developer_showcase = DeveloperShowcase.new(url: "#{base_url}/community/showcase/")
+    @developer_showcase.save!
   end
 
   def scrape
@@ -31,21 +32,20 @@ class DeveloperShowcaseScraper
   end
 
   def scrape_project_page
-    project_properties = {}
+    @project_properties = {}
 
     if is_page_valid?
-      project_properties[:url] = @link
-      project_properties[:title] = @project_page.css(".display-1").text.strip
-      project_properties[:description] = @project_page.css(".showcase-description").text.strip
+      @project_properties[:url] = @link
+      @project_properties[:title] = @project_page.css(".display-1").text.strip
+      @project_properties[:description] = @project_page.css(".showcase-description").text.strip
 
       website_link = @project_page.at_css('a:contains("Website")')
-      project_properties[:project_link] = website_link["href"]
-
-      get_project_authors
-      project_properties[:authors] = @authors
+      @project_properties[:project_link] = website_link["href"]
+      @project_properties[:developer_showcase_id] = @developer_showcase.id
+      @project_properties[:authors] = get_project_authors
     end
 
-    @project_properties = project_properties
+    @project_properties
   end
 
   def is_page_valid?
@@ -54,8 +54,7 @@ class DeveloperShowcaseScraper
        @project_page.css(".showcase-description") &&
        @project_page.at_css('a:contains("Website")') &&
        @project_page.at_css('li:contains("Submitted by")')
-
-       return true
+      return true
     end
 
     false
@@ -73,11 +72,19 @@ class DeveloperShowcaseScraper
       @authors = [authors_names.strip]
     end
 
-    @authors
+    @author_obj_arr = []
+
+    @authors.map do |author_name|
+      author = Author.new(name: author_name)
+      author.save
+      @author_obj_arr << author
+    end
+
+    @author_obj_arr
   end
 
   def add_project_to_showcase
-    @developer_showcase.add_project(Project.new_from_showcase(@project_properties))
+    @developer_showcase.add_project(@project_properties)
   end
 
   # If number of links doesn't match number of projects then the scraper wasn't

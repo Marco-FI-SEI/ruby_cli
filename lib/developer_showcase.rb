@@ -1,41 +1,55 @@
 class InvalidType < StandardError; end
 
-class DeveloperShowcase
-  attr_accessor :projects
+class DeveloperShowcase < ActiveRecord::Base
+  has_many :projects
 
-  def initialize
-    @projects = []
+  def save
+    self.save!
   end
 
-  def projects
-    @projects.dup.freeze
-  end
+  def add_project(project_properties)
+    url = project_properties[:url]
+    title = project_properties[:title]
+    description = project_properties[:description]
+    project_link = project_properties[:project_link]
+    showcase_id = project_properties[:developer_showcase_id]
+    authors = project_properties[:authors]
 
-  def add_project(project)
-    if !project.is_a?(Project)
-      raise InvalidType, "Must be a Project!"
-    else
-      @projects << project
-    end
+    project = Project.new(
+      url: url,
+      title: title,
+      description: description,
+      project_link: project_link,
+      developer_showcase_id: showcase_id,
+    )
+
+    project.save
+
+    create_project_author(project.id, authors)
   end
 
   def check_project_sites_status
     @report = {}
 
-    @projects.each do |project|
-      @link = project.project_link
-      title = project.title
+    self.projects.map do |project|
+      @proj_id = project.id
+      @link = project[:project_link]
+      title = project[:title]
       @report[title] = {}
-      @report[title][:authors] = get_authors_as_strings(project.authors)
+      @report[title][:authors] = get_authors_as_strings(project)
       @report[title][:site_response] = query_site
+
+      project.update(site_response: @report[title][:site_response])
     end
   end
 
-  def get_authors_as_strings(authors_arr)
-    if authors_arr.length > 1
-      authors_string = authors_arr.join(" & ")
+  def get_authors_as_strings(project)
+    author_names = project.authors.map { |author| author.name }
+
+    if author_names.length > 1
+      authors_string = author_names.join(" & ")
     else
-      authors_string = authors_arr.first
+      authors_string = author_names.first
     end
 
     authors_string
@@ -59,10 +73,17 @@ class DeveloperShowcase
     message
   end
 
+  def create_project_author(project_id, authors)
+    authors.map do |author|
+      project_author = ProjectAuthor.new(project_id: project_id, author_id: author.id)
+      project_author.save!
+    end
+  end
+
   def render_site_health_check_report
     rows = []
-    # k = project names, v = authors, site_response
-    @report.each do |k, v|
+    # k -> project names, v -> authors, site_response
+    @report.map do |k, v|
       row = []
       row << k
       row << v[:authors]

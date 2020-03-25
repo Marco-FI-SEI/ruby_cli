@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-#spotify_developer_showcase_tester.rb
-
 require_relative '../config/environment'
 
 DeveloperShowcaseController.new.call

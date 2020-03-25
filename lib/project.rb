@@ -1,21 +1,12 @@
-class Project
-  attr_accessor :url, :title, :description, :project_link, :authors
+class Project < ActiveRecord::Base
+  belongs_to :developer_showcase
+  has_many :project_authors
+  has_many :authors, :through => :project_authors
 
-  @@all = []
-
-  def initialize
-    @@all << self
-  end
-
-  def self.all
-    @@all
-  end
-
-  def self.new_from_showcase(properties)
-    Project.new.tap do |project|
-      properties.each do |k, v|
-        project.send("#{k}=", v)
-      end
+  def self.get_authors(id)
+    project_authors = ProjectAuthor.where(project_id: id)
+    authors = project_authors.map do |project_author|
+      Author.where(id: project_author[:author_id])
     end
   end
 end
