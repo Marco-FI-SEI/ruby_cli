@@ -1,6 +1,7 @@
 class InvalidType < StandardError; end
 
 class DeveloperShowcase < ActiveRecord::Base
+  attribute :tested, :integer, default: 0
   has_many :projects
 
   def save
@@ -78,6 +79,19 @@ class DeveloperShowcase < ActiveRecord::Base
       project_author = ProjectAuthor.new(project_id: project_id, author_id: author.id)
       project_author.save!
     end
+  end
+
+  def retrieve_and_render_showcase_report
+    showcase_projects = self.projects
+    @report = {}
+
+    showcase_projects.map do |project|
+      title = project[:title]
+      @report[title] = {}
+      @report[title][:authors] = get_authors_as_strings(project)
+      @report[title][:site_response] = project[:site_response]
+    end
+    render_site_health_check_report
   end
 
   def render_site_health_check_report

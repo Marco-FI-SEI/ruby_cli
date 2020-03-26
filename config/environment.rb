@@ -1,3 +1,4 @@
+require "date"
 require "bundler"
 Bundler.require
 
